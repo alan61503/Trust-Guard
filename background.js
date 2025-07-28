@@ -11,9 +11,19 @@
 // - News source credibility databases
 
 // Handle extension installation
+
 chrome.runtime.onInstalled.addListener((details) => {
     console.log('TrustGuard extension installed:', details.reason);
-    
+    // Safe example: initialize storage only after install
+    if (chrome.storage && chrome.storage.local) {
+        chrome.storage.local.set({ trustGuardInstalled: true }, () => {
+            if (chrome.runtime.lastError) {
+                console.warn('Storage set error:', chrome.runtime.lastError);
+            } else {
+                console.log('TrustGuard install flag set in storage');
+            }
+        });
+    }
     // Future: Initialize settings, API keys, or other setup
     if (details.reason === 'install') {
         console.log('First time installation - setup complete');
@@ -23,8 +33,19 @@ chrome.runtime.onInstalled.addListener((details) => {
 });
 
 // Handle extension startup
+
 chrome.runtime.onStartup.addListener(() => {
     console.log('TrustGuard extension started');
+    // Safe example: access storage only after startup
+    if (chrome.storage && chrome.storage.local) {
+        chrome.storage.local.get(['trustGuardInstalled'], (result) => {
+            if (chrome.runtime.lastError) {
+                console.warn('Storage get error:', chrome.runtime.lastError);
+            } else {
+                console.log('TrustGuard installed flag:', result.trustGuardInstalled);
+            }
+        });
+    }
     // Future: Initialize background services, API connections, etc.
 });
 

@@ -8,6 +8,7 @@ class TrustGuardPopup {
         this.error = document.getElementById('error');
         this.scoreValue = document.getElementById('scoreValue');
         this.keywordList = document.getElementById('keywordList');
+        this.suspiciousCount = document.getElementById('suspiciousCount');
         
         this.suspiciousKeywords = [
             'miracle cure', 'miracle treatment', 'miracle solution',
@@ -187,7 +188,7 @@ class TrustGuardPopup {
     
     displayResults(results) {
         this.scoreValue.textContent = `${results.trustScore}%`;
-        
+
         // Set color based on trust score
         this.scoreValue.className = 'score-value';
         if (results.trustScore >= 70) {
@@ -197,7 +198,12 @@ class TrustGuardPopup {
         } else {
             this.scoreValue.classList.add('score-low');
         }
-        
+
+        // Show suspicious count
+        if (this.suspiciousCount) {
+            this.suspiciousCount.textContent = results.totalKeywords || 0;
+        }
+
         // Display found keywords
         if (results.foundKeywords.length > 0) {
             const keywordElements = results.foundKeywords.map(keyword => 
@@ -207,7 +213,7 @@ class TrustGuardPopup {
         } else {
             this.keywordList.innerHTML = '<span class="keyword-item">No suspicious keywords detected.</span>';
         }
-        
+
         this.showResults();
     }
     

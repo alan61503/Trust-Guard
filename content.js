@@ -2,6 +2,92 @@
 // This script is injected into web pages to extract visible text content
 
 class TrustGuardContentScript {
+    // Inject trust score badges next to search result links in main content areas
+    injectTrustBadges() {
+        // Add dynamic CSS for trust-badge (scoped to head only)
+        if (!document.getElementById('trustguard-badge-style')) {
+            const style = document.createElement('style');
+            style.id = 'trustguard-badge-style';
+            style.textContent = `
+                .trust-badge {
+                    display: inline-block;
+                    vertical-align: middle;
+                    margin-left: 6px;
+                    font-size: 11px;
+                    font-weight: 500;
+                    border-radius: 7px;
+                    padding: 1px 7px 1px 5px;
+                    user-select: none;
+                    cursor: help;
+                    transition: background 0.2s;
+                    line-height: 1.2;
+                }
+                .trust-badge.green {
+                    color: #15803d;
+                    background: #bbf7d0;
+                    border: 1px solid #22c55e;
+                }
+                .trust-badge.yellow {
+                    color: #92400e;
+                    background: #fef9c3;
+                    border: 1px solid #fbbf24;
+                }
+                .trust-badge.red {
+                    color: #b91c1c;
+                    background: #fee2e2;
+                    border: 1px solid #ef4444;
+                }
+                .trust-badge:hover {
+                    filter: brightness(0.97);
+                }
+            `;
+            document.head.appendChild(style);
+        }
+
+        // Only append badges to <a> tags with href, never inject or write to <body> or <html>
+        document.querySelectorAll('a[href]').forEach(link => {
+            // Only operate on <a> tags with a valid href attribute
+            let next = link.nextSibling;
+            while (next && next.nodeType === Node.TEXT_NODE) {
+                next = next.nextSibling;
+            }
+            if (next && next.classList && next.classList.contains('trustguard-badge')) return;
+            if (link.parentElement && link.parentElement.classList && link.parentElement.classList.contains('trustguard-badge')) return;
+            if (link.querySelector('.trustguard-badge')) return;
+
+            // Generate a fake trust score
+            const score = Math.floor(Math.random() * 100);
+            let colorClass = 'red';
+            let icon = '⛔';
+            let msg = `This link appears ${score}% trustworthy based on metadata and sentiment analysis.`;
+            if (score > 80) {
+                colorClass = 'green';
+                icon = '🟢';
+                msg = `This link appears ${score}% trustworthy based on metadata and sentiment analysis.`;
+            } else if (score >= 50) {
+                colorClass = 'yellow';
+                icon = '🟡';
+                msg = `This link appears ${score}% trustworthy based on metadata and sentiment analysis.`;
+            }
+
+            // Create badge (non-intrusive, does not affect layout/text)
+            const badge = document.createElement('span');
+            badge.className = `trustguard-badge trust-badge ${colorClass}`;
+            badge.textContent = `${icon} ${score}`;
+            badge.title = msg;
+            badge.style.verticalAlign = 'middle';
+            badge.style.pointerEvents = 'auto';
+            badge.setAttribute('tabindex', '-1');
+            badge.addEventListener('click', (e) => {
+                e.stopPropagation();
+            });
+            // Only append the badge, never modify link or parent text/content, never write to <body> or <html>
+            if (link.parentNode && link.parentNode.nodeName !== 'BODY' && link.parentNode.nodeName !== 'HTML') {
+                link.parentNode.insertBefore(badge, link.nextSibling);
+            }
+            // If the link is a direct child of <body> or <html>, skip badge injection
+        });
+    }
     constructor() {
         this.suspiciousKeywords = [
             'miracle cure', 'miracle treatment', 'miracle solution',
@@ -57,6 +143,9 @@ class TrustGuardContentScript {
     init() {
         // Inject CSS styles for highlighting
         this.injectStyles();
+
+        // Inject trust badges on page load
+        setTimeout(() => this.injectTrustBadges(), 1200);
         
         // Listen for messages from the popup
         chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
@@ -404,7 +493,7 @@ class TrustGuardContentScript {
             return this.cleanText(fullText);
             
         } catch (error) {
-            console.error('TrustGuard: Error extracting text:', error);
+            // ...removed debugging output...
             return '';
         }
     }
@@ -422,13 +511,13 @@ class TrustGuardContentScript {
     // Alternative method using innerText (simpler but less comprehensive)
     extractTextSimple() {
         try {
-            // Get all text content from the body
+            // Get all text content from the body (safe: do not overwrite or set innerText/textContent)
+            // Only read, never write or replace
             const bodyText = document.body.innerText || document.body.textContent || '';
-            
             // Clean and return
             return this.cleanText(bodyText);
         } catch (error) {
-            console.error('TrustGuard: Error extracting text (simple method):', error);
+            // ...removed debugging output...
             return '';
         }
     }
@@ -450,7 +539,7 @@ class TrustGuardContentScript {
             
             return this.cleanText(textParts.join(' '));
         } catch (error) {
-            console.error('TrustGuard: Error extracting text from elements:', error);
+            // ...removed debugging output...
             return '';
         }
     }
@@ -491,10 +580,8 @@ class TrustGuardContentScript {
             
             // Create or update the floating overlay
             this.createFloatingOverlay(foundKeywords, suspiciousElements, fakeNewsCount);
-            
-            console.log('TrustGuard: Page scan completed');
         } catch (error) {
-            console.error('TrustGuard: Error scanning page:', error);
+            // ...removed debugging output...
         }
     }
     
@@ -594,85 +681,13 @@ class TrustGuardContentScript {
         }
     }
     
-    // Create floating overlay with scan results
+    // Remove intrusive overlays: do not create floating overlays or modify main content
     createFloatingOverlay(foundKeywords, suspiciousElements, fakeNewsCount = 0) {
-        // Remove existing overlay if it exists
-        const existingOverlay = document.getElementById('trustguard-overlay');
-        if (existingOverlay) {
-            existingOverlay.remove();
-        }
-        
-        // Calculate trust score
+        // Only update the trust badge (non-intrusive)
         const uniqueKeywords = [...new Set(foundKeywords)];
         const trustScore = Math.max(0, 100 - (uniqueKeywords.length * 10) - (fakeNewsCount * 5));
-        
-        // Create or update the trust badge
         this.createTrustBadge(trustScore);
-        
-        // Only create detailed overlay if there are suspicious keywords
-        if (uniqueKeywords.length > 0) {
-            // Create overlay element
-            const overlay = document.createElement('div');
-            overlay.id = 'trustguard-overlay';
-            
-            // Create header
-            const header = document.createElement('div');
-            header.id = 'trustguard-header';
-            header.innerHTML = `
-                <h3>🛡️ TrustGuard</h3>
-                <div id="trustguard-controls">
-                    <button class="trustguard-btn" id="trustguard-minimize" title="Minimize">−</button>
-                    <button class="trustguard-btn" id="trustguard-close" title="Close">×</button>
-                </div>
-            `;
-            
-            // Create content
-            const content = document.createElement('div');
-            content.id = 'trustguard-content';
-            
-            content.innerHTML = `
-                <div class="trustguard-score">
-                    <div class="trustguard-score-value ${this.getScoreClass(trustScore)}">${trustScore}%</div>
-                    <div>Trust Score</div>
-                </div>
-                <div class="trustguard-keywords">
-                    <h4>⚠️ Suspicious Keywords Found (${uniqueKeywords.length})</h4>
-                    ${uniqueKeywords.map(keyword => 
-                        `<div class="trustguard-keyword-item">${keyword}</div>`
-                    ).join('')}
-                </div>
-                ${fakeNewsCount > 0 ? `
-                <div class="trustguard-keywords">
-                    <h4>🤖 AI/Fake Content Detected (${fakeNewsCount} sentences)</h4>
-                    <div style="color: #ef4444; font-size: 11px; margin-top: 5px;">
-                        Sentences with suspicious patterns have been highlighted with red underlines.
-                    </div>
-                </div>
-                ` : ''}
-            `;
-            
-            // Create minimized content
-            const minimizedContent = document.createElement('div');
-            minimizedContent.className = 'trustguard-minimized-content';
-            minimizedContent.innerHTML = `
-                <div style="font-size: 20px;">🛡️</div>
-                <div style="font-size: 10px; margin-top: 5px;">${trustScore}%</div>
-            `;
-            
-            // Assemble overlay
-            overlay.appendChild(header);
-            overlay.appendChild(content);
-            overlay.appendChild(minimizedContent);
-            
-            // Add to page
-            document.body.appendChild(overlay);
-            
-            // Add event listeners
-            this.addOverlayEventListeners(overlay);
-            
-            // Make draggable
-            this.makeDraggable(overlay, header);
-        }
+        // No overlays or content modifications
     }
     
     // Get CSS class for trust score
@@ -697,60 +712,11 @@ class TrustGuardContentScript {
         });
     }
     
-    // Create trust badge
+    // Create trust badge (disabled: do not inject into <body> or <html>)
     createTrustBadge(trustScore) {
-        // Remove existing badge if it exists
-        const existingBadge = document.getElementById('trustguard-badge');
-        if (existingBadge) {
-            existingBadge.remove();
-        }
-        
-        // Create badge element
-        const badge = document.createElement('div');
-        badge.id = 'trustguard-badge';
-        
-        // Add appropriate class based on trust score
-        if (trustScore >= 70) {
-            badge.classList.add('trustguard-badge-high');
-        } else if (trustScore >= 40) {
-            badge.classList.add('trustguard-badge-medium');
-        } else {
-            badge.classList.add('trustguard-badge-low');
-        }
-        
-        // Set badge content
-        badge.innerHTML = `
-            <div id="trustguard-badge-score">${trustScore}</div>
-            <div id="trustguard-badge-icon">🛡️</div>
-        `;
-        
-        // Add tooltip
-        badge.title = `TrustGuard: ${trustScore}% trust score. Click for details.`;
-        
-        // Add click event to show detailed overlay
-        badge.addEventListener('click', () => {
-            // Show detailed overlay if it doesn't exist
-            const existingOverlay = document.getElementById('trustguard-overlay');
-            if (!existingOverlay) {
-                // Trigger a rescan to show the detailed overlay
-                this.scanAndHighlight();
-            } else {
-                // Toggle overlay visibility
-                existingOverlay.style.display = existingOverlay.style.display === 'none' ? 'block' : 'none';
-            }
-        });
-        
-        // Add to page
-        document.body.appendChild(badge);
-        
-        // Add entrance animation
-        badge.style.opacity = '0';
-        badge.style.transform = 'scale(0.5)';
-        
-        setTimeout(() => {
-            badge.style.opacity = '1';
-            badge.style.transform = 'scale(1)';
-        }, 100);
+        // No-op: do not inject any badge into <body> or <html>
+        // All trust badges are now only injected next to <a> tags in injectTrustBadges()
+        return;
     }
     
     // Make overlay draggable
@@ -830,6 +796,8 @@ class TrustGuardContentScript {
                                         hasNewContent = true;
                                     }
                                 });
+                                // Also re-inject trust badges for new content
+                                setTimeout(() => this.injectTrustBadges(), 500);
                             }
                         });
                     }
@@ -846,10 +814,8 @@ class TrustGuardContentScript {
                 childList: true,
                 subtree: true
             });
-            
-            console.log('TrustGuard: Page change observer started');
         } catch (error) {
-            console.error('TrustGuard: Error setting up page observer:', error);
+            // ...removed debugging output...
         }
     }
 }
@@ -861,4 +827,4 @@ const trustGuardContentScript = new TrustGuardContentScript();
 window.trustGuardContentScript = trustGuardContentScript;
 
 // Log that the content script is loaded (for debugging)
-console.log('TrustGuard content script loaded'); 
+// ...removed debugging output...

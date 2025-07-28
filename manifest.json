@@ -5,7 +5,8 @@
   "description": "A Chrome extension that scans webpages for misinformation and calculates a trust score",
   "permissions": [
     "activeTab",
-    "scripting"
+    "scripting",
+    "storage"
   ],
   "host_permissions": [
     "<all_urls>"

@@ -1,0 +1,10 @@
+# TrustGuard Icon 128x128
+# This is a placeholder file for the 128x128 icon
+# 
+# To generate proper PNG icons:
+# 1. Open generate-icons.html in your browser
+# 2. Click the download buttons for each size
+# 3. Save the PNG files to this icons folder
+# 4. Make sure the files are named: icon128.png
+#
+# Or use an online SVG to PNG converter with the SVG files in this folder.

@@ -34,6 +34,7 @@ The extension should load immediately without any icon setup required.
 ### Icons Not Loading
 - PNG icons are already generated and should work immediately
 - If issues persist, verify the filenames are exactly: `icon16.png`, `icon48.png`, `icon128.png`
+- If icon files are missing, use `manifest-backup.json` (renamed to `manifest.json`) which has icon references removed
 
 ### Extension Not Working
 - Check the browser console for errors

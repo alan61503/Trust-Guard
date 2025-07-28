@@ -85,6 +85,14 @@ TrustGuard/
 ### Permissions
 - `activeTab`: Access to the current tab for text extraction
 - `scripting`: Execute scripts in tabs for content analysis
+- `host_permissions`: Access to all URLs for content script injection
+
+### Manifest V3 Configuration
+The extension uses Manifest V3 with the following key features:
+- **Service Worker**: Background script for extension lifecycle management
+- **Content Scripts**: Automatically injected into all web pages
+- **Host Permissions**: Required for content script execution on all sites
+- **Web Accessible Resources**: Icons accessible to web pages if needed
 
 ### Architecture
 - **Manifest V3**: Uses the latest Chrome extension manifest version

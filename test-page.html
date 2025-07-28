@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TrustGuard Test Page</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .test-section {
+            margin: 30px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        h1, h2, h3 {
+            color: #333;
+        }
+        .warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>TrustGuard Test Page</h1>
+    <p>This page contains various suspicious keywords and phrases to test the TrustGuard highlighting feature.</p>
+    
+    <div class="warning">
+        <strong>Note:</strong> Load the TrustGuard extension and refresh this page to see the highlighting in action.<br>
+        <strong>Tip:</strong> Use the "Rescan Page" button in the extension popup to re-highlight content after the page changes.
+    </div>
+
+    <div class="test-section">
+        <h2>Health Claims</h2>
+        <p>This miracle cure will solve all your problems instantly. Doctors hate this one weird trick that can cure cancer naturally. The secret revealed by big pharma that they don't want you to know.</p>
+        
+        <h3>Weight Loss</h3>
+        <p>Lose weight fast with this revolutionary breakthrough. You won't believe what happened when she tried this amazing treatment. The shocking truth about instant weight loss that the media doesn't want you to know.</p>
+    </div>
+
+    <div class="test-section">
+        <h2>Conspiracy Theories</h2>
+        <p>The government conspiracy to hide the truth about the planned pandemic. This plandemic was orchestrated by big pharma. The forbidden knowledge that was banned by media outlets.</p>
+        
+        <h3>Clickbait Headlines</h3>
+        <p>Breaking news: This viral story will shock you! Exclusive content that's trending everywhere. Don't miss out on this limited time offer. Act now before it's too late!</p>
+    </div>
+
+    <div class="test-section">
+        <h2>Marketing Claims</h2>
+        <p>100% guaranteed results with our money back guarantee. Free trial offer that's absolutely incredible. This mind-blowing discovery is unbelievable and will change your life overnight.</p>
+        
+        <h3>Urgency Tactics</h3>
+        <p>Urgent: Last chance to get this emergency treatment. Final warning about this exclusive breakthrough. This ancient secret from folk medicine is a natural cure that works immediately.</p>
+    </div>
+
+    <div class="test-section">
+        <h2>Normal Content</h2>
+        <p>This is normal, legitimate content that should not be highlighted. It contains factual information and reasonable claims without any suspicious language patterns.</p>
+        
+        <h3>Legitimate Information</h3>
+        <p>Scientific research shows that regular exercise and a balanced diet contribute to overall health. Medical professionals recommend consulting with healthcare providers for personalized advice.</p>
+    </div>
+
+    <script>
+        // Simulate dynamic content loading
+        setTimeout(() => {
+            const newSection = document.createElement('div');
+            newSection.className = 'test-section';
+            newSection.innerHTML = `
+                <h2>Dynamically Loaded Content</h2>
+                <p>This content was loaded dynamically and contains more suspicious phrases like "secret revealed" and "miracle cure". The highlighting should work on this content too.</p>
+            `;
+            document.body.appendChild(newSection);
+        }, 3000);
+    </script>
+</body>
+</html> 

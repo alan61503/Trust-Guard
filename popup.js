@@ -2,6 +2,7 @@
 class TrustGuardPopup {
     constructor() {
         this.scanButton = document.getElementById('scanButton');
+        this.rescanButton = document.getElementById('rescanButton');
         this.loading = document.getElementById('loading');
         this.results = document.getElementById('results');
         this.error = document.getElementById('error');
@@ -36,11 +37,69 @@ class TrustGuardPopup {
     
     init() {
         this.scanButton.addEventListener('click', () => this.scanPage());
+        this.rescanButton.addEventListener('click', () => this.rescanPage());
+        
+        // Also trigger highlighting when popup opens
+        this.triggerHighlighting();
+    }
+    
+    async triggerHighlighting() {
+        try {
+            const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+            if (tab) {
+                await chrome.tabs.sendMessage(tab.id, { action: 'scanAndHighlight' });
+            }
+        } catch (error) {
+            console.log('TrustGuard: Could not trigger highlighting (content script may not be loaded yet)');
+        }
+    }
+    
+    async rescanPage() {
+        try {
+            this.showLoading('Rescanning page...');
+            this.hideError();
+            
+            // Get the active tab
+            const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+            
+            if (!tab) {
+                throw new Error('No active tab found');
+            }
+            
+            // Execute the scanAndHighlight function in the content script
+            await chrome.scripting.executeScript({
+                target: { tabId: tab.id },
+                function: () => {
+                    // Call the scanAndHighlight function directly
+                    if (window.trustGuardContentScript && typeof window.trustGuardContentScript.scanAndHighlight === 'function') {
+                        window.trustGuardContentScript.scanAndHighlight();
+                        return true;
+                    } else {
+                        // Fallback: try to send a message to the content script
+                        try {
+                            chrome.runtime.sendMessage({ action: 'scanAndHighlight' });
+                        } catch (e) {
+                            console.log('Could not trigger rescan');
+                        }
+                        return false;
+                    }
+                }
+            });
+            
+            // Show success message
+            this.showRescanSuccess();
+            
+        } catch (error) {
+            console.error('Rescan error:', error);
+            this.showError();
+        } finally {
+            this.hideLoading();
+        }
     }
     
     async scanPage() {
         try {
-            this.showLoading();
+            this.showLoading('Scanning page...');
             this.hideError();
             this.hideResults();
             
@@ -152,13 +211,21 @@ class TrustGuardPopup {
         this.showResults();
     }
     
-    showLoading() {
+    showLoading(message = 'Scanning page...') {
         this.scanButton.disabled = true;
+        this.rescanButton.disabled = true;
         this.loading.style.display = 'block';
+        
+        // Update the loading message
+        const loadingText = this.loading.querySelector('div:last-child');
+        if (loadingText) {
+            loadingText.textContent = message;
+        }
     }
     
     hideLoading() {
         this.scanButton.disabled = false;
+        this.rescanButton.disabled = false;
         this.loading.style.display = 'none';
     }
     
@@ -176,6 +243,32 @@ class TrustGuardPopup {
     
     hideError() {
         this.error.style.display = 'none';
+    }
+    
+    showRescanSuccess() {
+        // Show a brief success message
+        const successMessage = document.createElement('div');
+        successMessage.style.cssText = `
+            background: rgba(34, 197, 94, 0.2);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            border-radius: 6px;
+            padding: 10px;
+            margin-top: 15px;
+            font-size: 12px;
+            text-align: center;
+            color: #22c55e;
+        `;
+        successMessage.textContent = '✅ Page rescanned successfully!';
+        
+        // Insert after the rescan button
+        this.rescanButton.parentNode.insertBefore(successMessage, this.rescanButton.nextSibling);
+        
+        // Remove the message after 3 seconds
+        setTimeout(() => {
+            if (successMessage.parentNode) {
+                successMessage.parentNode.removeChild(successMessage);
+            }
+        }, 3000);
     }
 }
 

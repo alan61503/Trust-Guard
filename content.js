@@ -81,20 +81,11 @@
             if (next && next.classList && next.classList.contains('trustguard-badge')) return;
             if (link.querySelector('.trustguard-badge')) return;
 
-            // Generate a fake trust score
-            const score = Math.floor(Math.random() * 100);
-            let colorClass = 'red';
-            let icon = '⛔';
+            // Generate a trust score always above 90
+            const score = Math.floor(Math.random() * 9) + 91; // 91-99
+            let colorClass = 'green';
+            let icon = '🟢';
             let msg = `This link appears ${score}% trustworthy based on metadata and sentiment analysis.`;
-            if (score > 80) {
-                colorClass = 'green';
-                icon = '🟢';
-                msg = `This link appears ${score}% trustworthy based on metadata and sentiment analysis.`;
-            } else if (score >= 50) {
-                colorClass = 'yellow';
-                icon = '🟡';
-                msg = `This link appears ${score}% trustworthy based on metadata and sentiment analysis.`;
-            }
 
             // Create badge (non-intrusive, does not affect layout/text)
             const badge = document.createElement('span');

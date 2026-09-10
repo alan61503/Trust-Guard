@@ -1,6 +1,6 @@
 
 // Minimal, non-intrusive TrustGuard content script
-(function() {
+(function () {
     // Add dynamic CSS for trust-badge (scoped to head only)
     if (!document.getElementById('trustguard-badge-style')) {
         const style = document.createElement('style');
@@ -80,24 +80,14 @@
             while (next && next.nodeType === Node.TEXT_NODE) next = next.nextSibling;
             if (next && next.classList && next.classList.contains('trustguard-badge')) return;
             if (link.querySelector('.trustguard-badge')) return;
-
-            // Generate a trust score always above 90
-            const score = Math.floor(Math.random() * 9) + 91; // 91-99
-            let colorClass = 'green';
-            let icon = '🟢';
-            let msg = `This link appears ${score}% trustworthy based on metadata and sentiment analysis.`;
-
-            // Create badge (non-intrusive, does not affect layout/text)
             const badge = document.createElement('span');
             badge.className = `trustguard-badge trust-badge ${colorClass}`;
-            badge.textContent = `${icon} ${score}`;
-            badge.title = msg;
+            badge.textContent = `${icon}`;
+            badge.title = `Page risk: ${classification}`;
             badge.style.verticalAlign = 'middle';
             badge.style.pointerEvents = 'auto';
             badge.setAttribute('tabindex', '-1');
-            badge.addEventListener('click', (e) => {
-                e.stopPropagation();
-            });
+            badge.addEventListener('click', e => e.stopPropagation());
             if (link.parentNode && link.parentNode.nodeName !== 'BODY' && link.parentNode.nodeName !== 'HTML') {
                 link.parentNode.insertBefore(badge, link.nextSibling);
             }
@@ -105,8 +95,26 @@
         });
     }
 
-    // Inject trust badges on page load and on DOM changes
-    setTimeout(injectTrustBadges, 1200);
-    const observer = new MutationObserver(() => setTimeout(injectTrustBadges, 500));
+    // Message listener – used by popup or other scripts
+    chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+        if (request.action === 'scanAndHighlight') {
+            analyzePage().then(result => {
+                injectTrustBadges(result.classification);
+                sendResponse({ result });
+            }).catch(err => {
+                console.error('Analysis error:', err);
+                sendResponse({ error: err.message });
+            });
+            return true; // keep channel open for async response
+        }
+    });
+
+    // Auto‑run on load to keep badges up‑to‑date
+    analyzePage().then(r => injectTrustBadges(r.classification)).catch(() => { });
+
+    // Observe DOM changes for dynamic content
+    const observer = new MutationObserver(() => setTimeout(() => {
+        analyzePage().then(r => injectTrustBadges(r.classification)).catch(() => { });
+    }, 500));
     observer.observe(document.body, { childList: true, subtree: true });
 })();

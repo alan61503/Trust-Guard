@@ -193,13 +193,17 @@
 
     <div id="results" class="results">
         <div class="trust-score">
-            <div id="scoreValue" class="score-value">100%</div>
-            <div class="score-label">Trust Score</div>
+            <div id="scoreValue" class="score-value">0%</div>
+            <div class="score-label">Risk Score</div>
         </div>
+        <div id="classification" class="classification" style="text-align:center; margin-top:8px; font-weight:600;">Classification: N/A</div>
         <div class="suspicious-count" style="text-align:center; margin-bottom:10px;">
             <span style="font-size:15px;">⚠️</span>
             <span id="suspiciousCount" style="font-size:18px; font-weight:600; margin:0 4px;">0</span>
-            <span style="font-size:13px; opacity:0.8;">suspicious texts found</span>
+            <span style="font-size:13px; opacity:0.8;">indicators detected</span>
+        </div>
+        <div id="indicators" class="indicators" style="margin-top:10px; font-size:12px; line-height:1.4; color:#fff;">
+            <!-- Indicators will be populated here -->
         </div>
         <div class="keywords-found">
             <div class="keywords-title">Suspicious Keywords:</div>

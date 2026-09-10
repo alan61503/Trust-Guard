@@ -1,0 +1,23 @@
+{
+  "name": "trust-guard",
+  "version": "1.0.0",
+  "description": "A Chrome extension that scans webpages for potential misinformation and calculates a trust score based on suspicious keywords and phrases.",
+  "main": "background.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/alan61503/Trust-Guard.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/alan61503/Trust-Guard/issues"
+  },
+  "homepage": "https://github.com/alan61503/Trust-Guard#readme",
+  "devDependencies": {
+    "jsdom": "^27.0.1"
+  }
+}

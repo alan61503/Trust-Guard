@@ -91,12 +91,23 @@ class TrustGuardPopup {
                 throw new Error('No active tab found');
             }
 
-            // Execute content script to extract text
-            const response = await chrome.tabs.sendMessage(tab.id, { action: 'scanAndHighlight' });
-                if (response && response.result) {
-                    this.displayResults(response.result);
-                    // After deterministic analysis, request ML prediction for the current URL
-                    const currentUrl = tab.url;
+            // Execute scan via background service worker with fallback
+            let response = null;
+            try {
+                response = await chrome.runtime.sendMessage({ action: 'scanAndHighlight', tabId: tab.id, url: tab.url });
+            } catch (e) {
+                try {
+                    response = await chrome.tabs.sendMessage(tab.id, { action: 'scanAndHighlight' });
+                } catch (tabErr) {
+                    throw new Error('Could not connect to page for scanning');
+                }
+            }
+
+            if (response && response.result) {
+                this.displayResults(response.result);
+                // If ML prediction wasn't already in the response, fetch it
+                const currentUrl = tab.url;
+                if (!response.result.mlPrediction) {
                     chrome.runtime.sendMessage({ action: 'mlPredict', url: currentUrl }, (mlResp) => {
                         const mlElem = document.getElementById('mlStatus');
                         if (mlResp && mlResp.prediction) {
@@ -106,9 +117,10 @@ class TrustGuardPopup {
                             mlElem.textContent = 'ML Prediction: unavailable';
                         }
                     });
-                } else {
-                    throw new Error('No result from content script');
                 }
+            } else {
+                throw new Error(response && response.error ? response.error : 'No result from content script');
+            }
 
         } catch (error) {
             console.error('Scan error:', error);
@@ -197,7 +209,8 @@ class TrustGuardPopup {
                 const html = indicators.map(ind => {
                     const sign = ind.severity === 'high' ? '⚠️' : ind.severity === 'medium' ? '⚠️' : '✅';
                     const title = ind.type ? ind.type : '';
-                    return `<div class="indicator-item" title="${title}">${sign} ${ind.message}</div>`;
+                    const message = ind.message || (typeof ind === 'string' ? ind : JSON.stringify(ind));
+                    return `<div class="indicator-item" title="${title}">${sign} ${message}</div>`;
                 }).join('');
                 this.indicatorsElem.innerHTML = html;
             } else {

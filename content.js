@@ -42,7 +42,10 @@
     }
 
     // Only append badges to <a> tags with href, never inject or write to <body> or <html>
-    function injectTrustBadges() {
+    function injectTrustBadges(classification = 'LOW') {
+        const colorClass = classification === 'LOW' ? 'green' : (classification === 'MODERATE' ? 'yellow' : 'red');
+        const icon = classification === 'LOW' ? '✓' : (classification === 'MODERATE' ? '!' : '⚠');
+
         document.querySelectorAll('a[href]:not(.trustguard-processed)').forEach(link => {
             // Skip if already processed
             if (link.classList.contains('trustguard-processed')) return;
@@ -98,23 +101,39 @@
     // Message listener – used by popup or other scripts
     chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         if (request.action === 'scanAndHighlight') {
-            analyzePage().then(result => {
-                injectTrustBadges(result.classification);
-                sendResponse({ result });
-            }).catch(err => {
-                console.error('Analysis error:', err);
-                sendResponse({ error: err.message });
+            chrome.runtime.sendMessage({ action: 'scanAndHighlight' }, (bgResponse) => {
+                if (chrome.runtime.lastError) {
+                    console.warn('Background communication error:', chrome.runtime.lastError);
+                    sendResponse({ error: chrome.runtime.lastError.message });
+                    return;
+                }
+                if (bgResponse && bgResponse.result) {
+                    injectTrustBadges(bgResponse.result.classification);
+                }
+                sendResponse(bgResponse);
             });
             return true; // keep channel open for async response
         }
     });
 
     // Auto‑run on load to keep badges up‑to‑date
-    analyzePage().then(r => injectTrustBadges(r.classification)).catch(() => { });
+    setTimeout(() => {
+        chrome.runtime.sendMessage({ action: 'scanAndHighlight' }, (bgResponse) => {
+            if (chrome.runtime.lastError) return;
+            if (bgResponse && bgResponse.result) {
+                injectTrustBadges(bgResponse.result.classification);
+            }
+        });
+    }, 1200);
 
     // Observe DOM changes for dynamic content
     const observer = new MutationObserver(() => setTimeout(() => {
-        analyzePage().then(r => injectTrustBadges(r.classification)).catch(() => { });
-    }, 500));
+        chrome.runtime.sendMessage({ action: 'scanAndHighlight' }, (bgResponse) => {
+            if (chrome.runtime.lastError) return;
+            if (bgResponse && bgResponse.result) {
+                injectTrustBadges(bgResponse.result.classification);
+            }
+        });
+    }, 800));
     observer.observe(document.body, { childList: true, subtree: true });
 })();

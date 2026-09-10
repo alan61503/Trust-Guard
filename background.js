@@ -68,6 +68,34 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             console.log('API call requested:', request.data);
             sendResponse({ status: 'placeholder' });
             break;
+                    case 'mlPredict':
+                // Expect request.url
+                if (!request.url) {
+                    sendResponse({ error: 'Missing url' });
+                } else {
+                    // Call local ML API with timeout
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 3000);
+                    fetch('http://127.0.0.1:8000/predict', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ url: request.url }),
+                        signal: controller.signal,
+                    })
+                        .then(res => {
+                            clearTimeout(timeoutId);
+                            if (!res.ok) throw new Error('Network response was not ok');
+                            return res.json();
+                        })
+                        .then(data => {
+                            sendResponse(data);
+                        })
+                        .catch(err => {
+                            console.warn('ML API call failed:', err);
+                            sendResponse({ prediction: null });
+                        });
+                }
+                break;
             
         case 'logScan':
             // Future: Log scan results to external service

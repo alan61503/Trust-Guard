@@ -93,11 +93,22 @@ class TrustGuardPopup {
 
             // Execute content script to extract text
             const response = await chrome.tabs.sendMessage(tab.id, { action: 'scanAndHighlight' });
-            if (response && response.result) {
-                this.displayResults(response.result);
-            } else {
-                throw new Error('No result from content script');
-            }
+                if (response && response.result) {
+                    this.displayResults(response.result);
+                    // After deterministic analysis, request ML prediction for the current URL
+                    const currentUrl = tab.url;
+                    chrome.runtime.sendMessage({ action: 'mlPredict', url: currentUrl }, (mlResp) => {
+                        const mlElem = document.getElementById('mlStatus');
+                        if (mlResp && mlResp.prediction) {
+                            const confidence = (mlResp.confidence * 100).toFixed(1);
+                            mlElem.textContent = `ML Prediction: ${mlResp.prediction} (${confidence}%)`;
+                        } else {
+                            mlElem.textContent = 'ML Prediction: unavailable';
+                        }
+                    });
+                } else {
+                    throw new Error('No result from content script');
+                }
 
         } catch (error) {
             console.error('Scan error:', error);

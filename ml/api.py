@@ -16,6 +16,7 @@ app = FastAPI()
 allowed_origin = os.getenv("TRUSTGUARD_EXTENSION_ORIGIN")
 if not allowed_origin:
     raise RuntimeError("TRUSTGUARD_EXTENSION_ORIGIN environment variable not set")
+allowed_origin = allowed_origin.strip()
 
 app.add_middleware(
     CORSMiddleware,

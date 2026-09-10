@@ -31,5 +31,30 @@ class TestTrustGuardML(unittest.TestCase):
             order = json.load(f)
         self.assertEqual(len(order), 15)
 
+    def test_trailing_slash_normalization(self):
+        f1 = extract_features("https://www.linkedin.com")
+        f2 = extract_features("https://www.linkedin.com/")
+        self.assertEqual(f1, f2)
+        self.assertEqual(f1['path_length'], 0)
+        self.assertEqual(f1['path_depth'], 0)
+
+    def test_model_predictions(self):
+        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        model_path = os.path.join(base_dir, 'ml', 'model', 'trustguard_model.pkl')
+        order_path = os.path.join(base_dir, 'ml', 'model', 'feature_order.json')
+        model = joblib.load(model_path)
+        with open(order_path, 'r') as f:
+            order = json.load(f)
+
+        # Test LinkedIn with path
+        f_in = extract_features("https://www.linkedin.com/feed/")
+        vec_in = [f_in[k] for k in order]
+        self.assertEqual(model.predict([vec_in])[0], 0)  # 0 = legitimate
+
+        # Test obvious phishing URL
+        f_phish = extract_features("http://login.verify-account.bank-update.com/paypal/reset")
+        vec_phish = [f_phish[k] for k in order]
+        self.assertEqual(model.predict([vec_phish])[0], 1)  # 1 = phishing
+
 if __name__ == '__main__':
     unittest.main()

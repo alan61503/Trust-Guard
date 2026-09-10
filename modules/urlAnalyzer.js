@@ -6,7 +6,11 @@ export function analyzeURL(urlString) {
     const path = url.pathname;
     const full = urlString;
 
-    const urlLength = full.length;
+    // Treat trailing slash on homepage as equivalent to no trailing slash
+    const isHomepageSlash = (path === '/' || path === '') && !url.search && !url.hash && full.endsWith('/');
+    const normUrlString = isHomepageSlash ? full.slice(0, -1) : full;
+
+    const urlLength = normUrlString.length;
     const hostnameLength = hostname.length;
     const normHostname = hostname.toLowerCase().startsWith('www.') ? hostname.slice(4) : hostname;
     const dotCount = (normHostname.match(/\./g) || []).length;

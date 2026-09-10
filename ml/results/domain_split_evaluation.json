@@ -1,22 +1,22 @@
 {
-  "train_samples": 189408,
+  "train_samples": 209408,
   "test_samples": 46387,
-  "accuracy": 0.9927350335223231,
-  "precision": 0.9959252023444042,
-  "recall": 0.9854191980558931,
-  "f1": 0.9906443463535161,
+  "accuracy": 0.9616271800288874,
+  "precision": 0.9586985839514498,
+  "recall": 0.9422843256379101,
+  "f1": 0.9504205893822071,
   "confusion_matrix": [
     [
-      28208,
-      73
+      27546,
+      735
     ],
     [
-      264,
-      17842
+      1045,
+      17061
     ]
   ],
-  "phishing_precision": 0.9959252023444042,
-  "phishing_recall": 0.9854191980558931,
-  "phishing_f1": 0.9906443463535161,
+  "phishing_precision": 0.9586985839514498,
+  "phishing_recall": 0.9422843256379101,
+  "phishing_f1": 0.9504205893822071,
   "registrable_overlap": false
 }

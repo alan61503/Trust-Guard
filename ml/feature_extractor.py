@@ -30,17 +30,22 @@ def extract_features(url: str) -> dict:
     """
     parsed = urlparse(url)
     hostname = parsed.hostname or ''
-    path = parsed.path or ''
+    raw_path = parsed.path or ''
     full = url
+
+    # Normalize homepage trailing slash: treat 'https://example.com/' as 'https://example.com'
+    is_homepage_slash = (raw_path == '/' or raw_path == '') and not parsed.query and not parsed.fragment and full.endswith('/')
+    norm_url = full[:-1] if is_homepage_slash else full
 
     # Normalize hostname for domain structure analysis:
     # 'www.' is a standard web host prefix, not an intrinsic subdomain.
     norm_hostname = hostname[4:] if hostname.lower().startswith('www.') else hostname
 
     # Basic length features
-    url_length = len(full)
+    url_length = len(norm_url)
     hostname_length = len(hostname)
-    path_length = len(path.lstrip('/'))
+    clean_path = raw_path.strip('/')
+    path_length = len(clean_path)
 
     # Character based counts on domain structure
     num_dots = norm_hostname.count('.')
@@ -57,7 +62,7 @@ def extract_features(url: str) -> dict:
     has_encoded_chars = int(bool(re.search(r'%[0-9A-Fa-f]{2}', full)))
 
     # Path depth (number of non-empty segments)
-    path_depth = len([seg for seg in path.split('/') if seg])
+    path_depth = len([seg for seg in raw_path.split('/') if seg])
 
     # Suspicious term count (numeric)
     lowered = hostname.lower()

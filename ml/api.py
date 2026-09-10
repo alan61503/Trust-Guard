@@ -5,7 +5,10 @@ import json
 import joblib
 import numpy as np
 
-from feature_extractor import extract_features  # Assuming this module is in the same directory
+try:
+    from ml.feature_extractor import extract_features
+except ImportError:
+    from .feature_extractor import extract_features
 
 app = FastAPI()
 
@@ -18,7 +21,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[allowed_origin],
     allow_credentials=True,
-    allow_methods=["POST"],
+    allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
 )
 

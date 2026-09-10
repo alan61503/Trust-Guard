@@ -8,7 +8,8 @@ export function analyzeURL(urlString) {
 
     const urlLength = full.length;
     const hostnameLength = hostname.length;
-    const dotCount = (hostname.match(/\./g) || []).length;
+    const normHostname = hostname.toLowerCase().startsWith('www.') ? hostname.slice(4) : hostname;
+    const dotCount = (normHostname.match(/\./g) || []).length;
     const subdomains = Math.max(0, dotCount - 1); // exclude TLD dot
     const hyphenCount = (hostname.match(/-/g) || []).length;
     const digitCount = (hostname.match(/[0-9]/g) || []).length;

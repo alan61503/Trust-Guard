@@ -112,9 +112,9 @@ class TrustGuardPopup {
                         const mlElem = document.getElementById('mlStatus');
                         if (mlResp && mlResp.prediction) {
                             const confidence = (mlResp.confidence * 100).toFixed(1);
-                            mlElem.textContent = `ML Prediction: ${mlResp.prediction} (${confidence}%)`;
+                            mlElem.textContent = `ML Prediction (Second Opinion): ${mlResp.prediction} (${confidence}%)`;
                         } else {
-                            mlElem.textContent = 'ML Prediction: unavailable';
+                            mlElem.textContent = 'ML Prediction: unavailable (local service offline)';
                         }
                     });
                 }
@@ -195,9 +195,9 @@ class TrustGuardPopup {
         } else {
             this.scoreValue.classList.add('score-low');
         }
-        // Classification text
+        // Classification text (Primary)
         if (this.classificationElem) {
-            this.classificationElem.textContent = `Classification: ${classification}`;
+            this.classificationElem.textContent = `Primary Classification: ${classification}`;
         }
         // Indicator count
         if (this.suspiciousCount) {
@@ -227,10 +227,14 @@ class TrustGuardPopup {
                 positivesElem.innerHTML = '<div class="positive-item">No positive indicators.</div>';
             }
         }
-        // ML prediction status
+        // ML prediction status (Second Opinion)
         const mlElem = document.getElementById('mlStatus');
         if (mlElem) {
-            mlElem.textContent = mlPrediction ? `ML Prediction: ${mlPrediction}` : 'ML Prediction: N/A';
+            if (mlPrediction && mlPrediction !== 'unavailable') {
+                mlElem.textContent = `ML Prediction (Second Opinion): ${mlPrediction}`;
+            } else {
+                mlElem.textContent = 'ML Prediction: unavailable (local service offline)';
+            }
         }
         this.showResults();
     }

@@ -10,17 +10,25 @@ try:
 except ImportError:
     from .feature_extractor import extract_features
 
+try:
+    from dotenv import load_dotenv
+    env_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env")
+    if os.path.exists(env_path):
+        load_dotenv(env_path)
+    else:
+        load_dotenv()
+except ImportError:
+    pass
+
 app = FastAPI()
 
-# Load allowed origin from env
-allowed_origin = os.getenv("TRUSTGUARD_EXTENSION_ORIGIN")
-if not allowed_origin:
-    raise RuntimeError("TRUSTGUARD_EXTENSION_ORIGIN environment variable not set")
-allowed_origin = allowed_origin.strip()
+# Load allowed origin from env (with fallback to default extension origin)
+allowed_origin = os.getenv("TRUSTGUARD_EXTENSION_ORIGIN", "chrome-extension://kkjfmdmimmdcmimjnblnoekkfbcihbjo").strip()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[allowed_origin],
+    allow_origins=[allowed_origin, "chrome-extension://kkjfmdmimmdcmimjnblnoekkfbcihbjo"],
+    allow_origin_regex=r"^chrome-extension://.*$",
     allow_credentials=True,
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],

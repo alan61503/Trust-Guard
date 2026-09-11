@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "TrustGuard",
   "version": "1.0.0",
-  "description": "A Chrome extension that scans webpages for misinformation and calculates a trust score",
+  "description": "A Chrome extension that scans webpages for phishing and malicious threats and calculates a security risk score",
   "permissions": [
     "activeTab",
     "scripting",
@@ -14,7 +14,7 @@
   ],
   "action": {
     "default_popup": "popup.html",
-    "default_title": "TrustGuard - Scan for Misinformation",
+    "default_title": "TrustGuard - Phishing & Malicious Website Detection",
     "default_icon": {
       "16": "icons/icon16.png",
       "48": "icons/icon48.png",

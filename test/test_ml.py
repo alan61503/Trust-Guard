@@ -56,5 +56,31 @@ class TestTrustGuardML(unittest.TestCase):
         vec_phish = [f_phish[k] for k in order]
         self.assertEqual(model.predict([vec_phish])[0], 1)  # 1 = phishing
 
+    def test_api_health_and_predict(self):
+        from fastapi.testclient import TestClient
+        from ml.api import app
+
+        client = TestClient(app)
+        # Test /health
+        res_health = client.get("/health")
+        self.assertEqual(res_health.status_code, 200)
+        self.assertEqual(res_health.json(), {"status": "ok"})
+
+        # Test /predict with legitimate URL
+        headers = {"Origin": "chrome-extension://kkjfmdmimmdcmimjnblnoekkfbcihbjo"}
+        res_legit = client.post("/predict", json={"url": "https://www.linkedin.com/feed/"}, headers=headers)
+        self.assertEqual(res_legit.status_code, 200)
+        data_legit = res_legit.json()
+        self.assertEqual(data_legit["prediction"], "legitimate")
+        self.assertIn("confidence", data_legit)
+        self.assertIn("phishing_probability", data_legit)
+
+        # Test /predict with phishing URL
+        res_phish = client.post("/predict", json={"url": "http://login.verify-account.bank-update.com/paypal/reset"}, headers=headers)
+        self.assertEqual(res_phish.status_code, 200)
+        data_phish = res_phish.json()
+        self.assertEqual(data_phish["prediction"], "phishing")
+        self.assertGreater(data_phish["phishing_probability"], 0.9)
+
 if __name__ == '__main__':
     unittest.main()

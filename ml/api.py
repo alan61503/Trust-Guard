@@ -49,6 +49,7 @@ app.add_middleware(
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
+    allow_private_network=True
 )
 
 # Load model and feature order

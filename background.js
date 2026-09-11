@@ -43,27 +43,17 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                     // Resolve active tab
                     let tab = sender.tab;
                     if (!tab || !tab.id) {
-                        if (request.tabId) {
-                            try {
-                                tab = await chrome.tabs.get(request.tabId);
-                            } catch (e) {
-                                // fallback to activeTab query
-                            }
-                        }
-                        if (!tab || !tab.id) {
-                            const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
-                            tab = activeTab;
-                        }
+                        const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+                        tab = activeTab;
                     }
 
-                    const targetUrl = (tab && tab.url) || request.url;
-                    if (!tab || !tab.id || !targetUrl) {
+                    if (!tab || !tab.id || !tab.url) {
                         sendResponse({ error: 'No active tab found' });
                         return;
                     }
 
                     // Check for internal browser URLs where scripting is forbidden
-                    if (targetUrl.startsWith('chrome://') || targetUrl.startsWith('chrome-extension://') || targetUrl.startsWith('edge://') || targetUrl.startsWith('about:')) {
+                    if (tab.url.startsWith('chrome://') || tab.url.startsWith('chrome-extension://') || tab.url.startsWith('edge://') || tab.url.startsWith('about:')) {
                         sendResponse({
                             result: {
                                 riskScore: 0,
@@ -126,7 +116,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                     }
 
                     // 2. Deterministic Security Analysis (PRIMARY VERDICT)
-                    const urlFeatures = analyzeURL(targetUrl);
+                    const urlFeatures = analyzeURL(tab.url);
                     const contentFeatures = analyzeContent(pageData.text);
                     const formFeatures = pageData.formFeatures;
                     const deterministic = computeRisk(urlFeatures, contentFeatures, formFeatures);
@@ -164,16 +154,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                                     document.head.appendChild(style);
                                 }
 
-                                document.querySelectorAll('a[href]').forEach(link => {
-                                    let next = link.nextSibling;
-                                    while (next && next.nodeType === Node.TEXT_NODE) next = next.nextSibling;
-                                    if (next && next.classList && next.classList.contains('trustguard-badge')) {
-                                        next.className = `trustguard-badge trust-badge ${colorClass}`;
-                                        next.textContent = `${icon}`;
-                                        next.title = `Page risk: ${classification}`;
-                                        link.classList.add('trustguard-processed');
-                                        return;
-                                    }
+                                document.querySelectorAll('a[href]:not(.trustguard-processed)').forEach(link => {
                                     if (link.classList.contains('trustguard-processed')) return;
                                     let el = link;
                                     for (let i = 0; i < 5 && el; i++) {
@@ -207,25 +188,48 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                     // 4. Query Local ML API as SECOND OPINION (Do NOT average or combine scores)
                     let mlStatusText = null;
                     try {
-                        const controller = new AbortController();
-                        const timeoutId = setTimeout(() => controller.abort(), 4000);
-                        const mlRes = await fetch('http://127.0.0.1:8000/predict', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ url: targetUrl }),
-                            signal: controller.signal
-                        });
-                        clearTimeout(timeoutId);
-                        if (mlRes.ok) {
-                            const mlData = await mlRes.json();
-                            if (mlData && mlData.prediction) {
-                                const conf = (mlData.confidence * 100).toFixed(1);
-                                mlStatusText = `${mlData.prediction} (${conf}%)`;
-                            }
-                        }
-                    } catch (mlErr) {
-                        console.warn('ML predict second opinion unavailable:', mlErr.message);
-                    }
+// [TG ML] starting fetch
+console.log('[TG ML] starting fetch');
+const requestUrl = 'http://127.0.0.1:8000/predict';
+const requestBody = JSON.stringify({ url: tab.url });
+console.log('[TG ML] request URL:', requestUrl);
+console.log('[TG ML] request body:', requestBody);
+const controller = new AbortController();
+const timeoutId = setTimeout(() => controller.abort(), 10000);
+let mlRes;
+try {
+    mlRes = await fetch(requestUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: requestBody,
+        signal: controller.signal
+    });
+} catch (fetchErr) {
+    console.warn('[TG ML] fetch error:', fetchErr.name, fetchErr.message);
+    console.log('[TG ML] abort controller aborted?', controller.signal.aborted);
+    // fetch error logged; continue without abort
+}
+clearTimeout(timeoutId);
+if (mlRes) {
+    console.log('[TG ML] fetch response status:', mlRes.status);
+    const responseText = await mlRes.text();
+    console.log('[TG ML] fetch response body:', responseText);
+    if (mlRes.ok) {
+    try {
+        const mlData = JSON.parse(responseText);
+        if (mlData && mlData.prediction) {
+            const conf = (mlData.confidence * 100).toFixed(1);
+            mlStatusText = `${mlData.prediction} (${conf}%)`;
+        }
+    } catch (jsonErr) {
+        console.warn('[TG ML] JSON parse error:', jsonErr.name, jsonErr.message);
+    }
+}
+}
+    }
+    catch (mlErr) {
+    console.warn('[TG ML] outer error:', mlErr);
+}
 
                     // Format indicators cleanly for popup
                     const formattedIndicators = deterministic.indicators.map(ind => {
@@ -244,7 +248,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                             mlPrediction: mlStatusText
                         }
                     });
-                } catch (err) {
+}
+                catch (err) {
                     console.error('scanAndHighlight handling error:', err);
                     sendResponse({
                         error: err.message,
@@ -265,7 +270,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             sendResponse({
                 name: 'TrustGuard',
                 version: '1.0.0',
-                description: 'Phishing & Malicious Website Detection Extension'
+                description: 'Misinformation Detection Extension'
             });
             break;
 
@@ -279,7 +284,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 sendResponse({ error: 'Missing url' });
             } else {
                 const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 4000);
+                const timeoutId = setTimeout(() => controller.abort(), 3000);
                 fetch('http://127.0.0.1:8000/predict', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },

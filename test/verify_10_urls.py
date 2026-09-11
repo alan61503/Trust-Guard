@@ -22,12 +22,16 @@ for url in urls:
     req = urllib.request.Request(
         'http://127.0.0.1:8000/predict',
         data=json.dumps({'url': url}).encode('utf-8'),
-        headers={'Content-Type': 'application/json', 'Origin': 'chrome-extension://kkjfmdmimmdcmimjnblnoekkfbcihbjo'}
+        headers={
+            'Content-Type': 'application/json',
+            'Origin': 'chrome-extension://kkjfmdmimmdcmimjnblnoekkfbcihbjo',
+            'Connection': 'close'
+        }
     )
     with urllib.request.urlopen(req) as resp:
         data = json.loads(resp.read().decode('utf-8'))
         pred = data['prediction']
         conf = f"{data['confidence']*100:.2f}%"
         prob = f"{data['phishing_probability']*100:.2f}%"
-        print(f"{url:<56} | {pred:<10} | {conf:<7} | {prob}")
-print("=" * 80)
+        print(f"{url:<56} | {pred:<10} | {conf:<7} | {prob}", flush=True)
+print("=" * 80, flush=True)

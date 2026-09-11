@@ -81,13 +81,7 @@
             // Avoid duplicate badge injection
             let next = link.nextSibling;
             while (next && next.nodeType === Node.TEXT_NODE) next = next.nextSibling;
-            if (next && next.classList && next.classList.contains('trustguard-badge')) {
-                next.className = `trustguard-badge trust-badge ${colorClass}`;
-                next.textContent = `${icon}`;
-                next.title = `Page risk: ${classification}`;
-                link.classList.add('trustguard-processed');
-                return;
-            }
+            if (next && next.classList && next.classList.contains('trustguard-badge')) return;
             if (link.querySelector('.trustguard-badge')) return;
             const badge = document.createElement('span');
             badge.className = `trustguard-badge trust-badge ${colorClass}`;

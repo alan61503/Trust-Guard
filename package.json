@@ -5,7 +5,8 @@
   "description": "A Chrome extension that scans webpages for phishing and malicious threats and calculates a security risk score.",
   "main": "background.js",
   "scripts": {
-    "test": "python -m unittest discover -s test"
+    "test": "python -m unittest discover -s test",
+    "backend": "python -m ml.server"
   },
   "repository": {
     "type": "git",
